@@ -1,14 +1,16 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import {RootState} from '../../app/store'
+import { RootState } from '../../app/store'
 import axios, { AxiosError } from "axios";
 
 export enum AuthStatus {
     Idle,
     PendingRequestToken,
+    RequestTokenFetched,
     PendingApproval,
     Approved,
     PendingSessionId,
-    LoggedIn
+    LoggedIn,
+    Rejected
 }
 
 export interface AuthState {
@@ -32,8 +34,7 @@ interface SessionIdResponse {
 
 // Todo: either put them in the store or in an env file
 const REQUEST_TOKEN_URL = 'https://api.themoviedb.org/3/authentication/token/new'
-export const REQUEST_TOKEN_APPROVAL_URL = 'https://www.themoviedb.org/authenticate'
-export const REQUEST_TOKEN_APPROVED_URL = 'http://localhost:3000/login/allow'
+const REQUEST_TOKEN_APPROVAL_URL = 'https://api.themoviedb.org/3/authentication/token/validate_with_login'
 const SESSION_ID_URL = 'https://api.themoviedb.org/3/authentication/session/new'
 
 const initialState = {
@@ -46,37 +47,46 @@ const initialState = {
 }
 
 export const fetchRequestToken = createAsyncThunk('auth/fetchRequestToken', async (accessTokenAuth: string) => {
-    try {
-        const response = await axios.get(REQUEST_TOKEN_URL, {
+    const response = await axios.get(REQUEST_TOKEN_URL, {
+        headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${accessTokenAuth}`
+        }
+    })
+    return response.data
+})
+
+export const approveRequestToken = createAsyncThunk('auth/approveRequestToken', async ({ accessTokenAuth, requestToken, username, password }: { accessTokenAuth: string; requestToken: string, username: string, password: string }) => {
+    const response = await axios.post(
+        REQUEST_TOKEN_APPROVAL_URL, 
+        {
+            'username': username,
+            'password': password,
+            'request_token': requestToken,
+        }, 
+        {
             headers: {
-              'accept': 'application/json',
-              'Authorization': `Bearer ${accessTokenAuth}`
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'Authorization': `Bearer ${accessTokenAuth}`
             }
         })
-        return response.data
-    } catch (error) {
-        const axiosError = error as AxiosError
-        return axiosError.response?.data || 'An error occurred';
-    }
+    
+    return response.data
 })
 
 export const fetchSessionId = createAsyncThunk('auth/fetchSessionId', async ({ accessTokenAuth, requestToken }: { accessTokenAuth: string; requestToken: string }) => {
-    try {
-        const response = await axios.post(
-            SESSION_ID_URL, 
-            {'request_token': requestToken}, 
-            {
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json',
-                    'Authorization': `Bearer ${accessTokenAuth}`
-                }
-            })
-        return response.data
-    } catch (error) {
-        const axiosError = error as AxiosError
-        return axiosError.response?.data || 'An error occurred';
-    }
+    const response = await axios.post(
+        SESSION_ID_URL, 
+        {'request_token': requestToken}, 
+        {
+            headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'Authorization': `Bearer ${accessTokenAuth}`
+            }
+        })
+    return response.data
 })
 
 const authSlice = createSlice({
@@ -87,7 +97,6 @@ const authSlice = createSlice({
             state.status = AuthStatus.Idle
             state.requestToken = ''
             state.sessionId = ''
-            state.error = ''
         },
         
         setRequestToken(state: AuthState, action: PayloadAction<string>) {
@@ -107,12 +116,30 @@ const authSlice = createSlice({
             if (action.payload.success)
             {
                 authState.requestToken = action.payload.request_token
-                authState.status = AuthStatus.PendingApproval
+                authState.status = AuthStatus.RequestTokenFetched
             }
         })
 
         builder.addCase(fetchRequestToken.rejected, (authState: AuthState, action) => {
+            authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the request token"
+        })
+
+
+        builder.addCase(approveRequestToken.pending, (authState: AuthState, action: PayloadAction) => {
+            authState.status = AuthStatus.PendingApproval
+        })
+
+        builder.addCase(approveRequestToken.fulfilled, (authState: AuthState, action: PayloadAction<SessionIdResponse>) => {
+            if (action.payload.success)
+            {
+                authState.status = AuthStatus.Approved
+            }
+        })
+
+        builder.addCase(approveRequestToken.rejected, (authState: AuthState, action) => {
+            authState.status = AuthStatus.Rejected
+            authState.error = action.error?.message || "An error occurred approving the request token"
         })
 
 
@@ -124,11 +151,13 @@ const authSlice = createSlice({
             if (action.payload.success)
             {
                 authState.status = AuthStatus.LoggedIn
+                authState.error = ''
                 authState.sessionId = action.payload.session_id
             }
         })
 
         builder.addCase(fetchSessionId.rejected, (authState: AuthState, action) => {
+            authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the session ID"
         })
     }
