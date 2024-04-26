@@ -1,18 +1,29 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './features/auth/login';
-import Movies from './features/movies/movies';
+import HomePage from './features/homePage/homePage';
+import { useSelector } from 'react-redux';
+import { AuthStatus, selectStatus } from './features/auth/authSlice';
 
 function App() {
-  return (
-    <main className="App">
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Movies />} />
-        </Routes>
-      </Router>
-    </main>
-  );
+    const loginStatus = useSelector(selectStatus)
+
+    return (
+        <main className="App">
+            <Router>
+                    <Routes>
+                        {loginStatus !== AuthStatus.FetchedAccountId && (
+                            <Route path="/login" element={<Login />} />
+                        )}
+                
+                        {loginStatus === AuthStatus.FetchedAccountId && (
+                            <Route path="/" element={<HomePage />} />
+                        )}
+                
+                        <Route path="*" element={<Navigate to={loginStatus === AuthStatus.FetchedAccountId ? '/' : '/login'} />} />
+                    </Routes>
+            </Router>
+        </main>
+      );
 }
 
 export default App;

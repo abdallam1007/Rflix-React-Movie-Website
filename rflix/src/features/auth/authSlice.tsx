@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from '../../app/store'
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 
 export enum AuthStatus {
     Idle,
@@ -10,29 +10,37 @@ export enum AuthStatus {
     Approved,
     PendingSessionId,
     LoggedIn,
+    PendingAccountId,
+    FetchedAccountId,
     Rejected
 }
 
 export interface AuthState {
-    accessTokenAuth: string
+    accessTokenAuth: string,
     requestToken: string,
     sessionId: string,
     status: AuthStatus,
-    error: string
+    accountId: number,
+    error: string,
 }
 
 interface RequestTokenResponse {
-    success: boolean;
-    expires_at: string;
-    request_token: string;
+    success: boolean
+    expires_at: string
+    request_token: string
 }
 
 interface SessionIdResponse {
-    session_id: string;
+    session_id: string
     success: boolean
 }
 
+interface AccountResponse {
+    id: number
+}
+
 // Todo: either put them in the store or in an env file
+const ACCOUNT_ID_URL = 'https://api.themoviedb.org/3/account'
 const REQUEST_TOKEN_URL = 'https://api.themoviedb.org/3/authentication/token/new'
 const REQUEST_TOKEN_APPROVAL_URL = 'https://api.themoviedb.org/3/authentication/token/validate_with_login'
 const SESSION_ID_URL = 'https://api.themoviedb.org/3/authentication/session/new'
@@ -43,6 +51,7 @@ const initialState = {
     requestToken: '',
     sessionId: '',
     status: AuthStatus.Idle,
+    accountId: 0,
     error: ''
 }
 
@@ -86,6 +95,20 @@ export const fetchSessionId = createAsyncThunk('auth/fetchSessionId', async ({ a
                 'Authorization': `Bearer ${accessTokenAuth}`
             }
         })
+    return response.data
+})
+
+export const fetchAccountId = createAsyncThunk('auth/fetchAccountId', async ({ accessTokenAuth, sessionId }: { accessTokenAuth: string; sessionId: string }) => {
+    const response = await axios.get(ACCOUNT_ID_URL, {
+        params: {
+            session_id: sessionId
+        },
+
+        headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${accessTokenAuth}`
+        }
+    })
     return response.data
 })
 
@@ -160,6 +183,21 @@ const authSlice = createSlice({
             authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the session ID"
         })
+
+
+        builder.addCase(fetchAccountId.pending, (authState: AuthState, action: PayloadAction) => {
+            authState.status = AuthStatus.PendingAccountId
+        })
+
+        builder.addCase(fetchAccountId.fulfilled, (authState: AuthState, action: PayloadAction<AccountResponse>) => {
+            authState.status = AuthStatus.FetchedAccountId
+            authState.accountId = action.payload.id
+        })
+
+        builder.addCase(fetchAccountId.rejected, (authState: AuthState, action) => {
+            authState.status = AuthStatus.Rejected
+            authState.error = action.error?.message || "An error occurred fetching the session ID"
+        })
     }
 })
 
@@ -168,6 +206,7 @@ export const selectAccessTokenAuth = (state: RootState) => state.auth.accessToke
 export const selectRequestToken = (state: RootState) => state.auth.requestToken
 export const selectSessionId = (state: RootState) => state.auth.sessionId
 export const selectStatus = (state: RootState) => state.auth.status
+export const selectAccountId = (state: RootState) => state.auth.accountId
 export const selectError = (state: RootState) => state.auth.error
 
 export const { resetState , setRequestToken , updateStatus } = authSlice.actions;

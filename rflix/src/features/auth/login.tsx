@@ -1,5 +1,6 @@
+import './styles/login.css'
 import { useDispatch, useSelector } from "react-redux";
-import { AuthStatus, selectStatus, fetchRequestToken, selectAccessTokenAuth, selectRequestToken, approveRequestToken, fetchSessionId, resetState, selectError } from "./authSlice"
+import { AuthStatus, selectStatus, fetchRequestToken, selectAccessTokenAuth, selectRequestToken, approveRequestToken, fetchSessionId, resetState, selectError, fetchAccountId, selectSessionId, selectAccountId } from "./authSlice"
 import { AppDispatch } from "../../app/store";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +13,8 @@ const Login = () => {
 
     const accessTokenAuth = useSelector(selectAccessTokenAuth)
     const requestToken = useSelector(selectRequestToken)
+    const sessionId = useSelector(selectSessionId)
+    const accountId = useSelector(selectAccountId)
     const loginStatus = useSelector(selectStatus)
     const errorMessage = useSelector(selectError)
 
@@ -26,19 +29,19 @@ const Login = () => {
         if (loginStatus === AuthStatus.RequestTokenFetched) {
             dispatch(approveRequestToken({ accessTokenAuth, requestToken, username, password }))
         }
-    }, [loginStatus]);
+    }, [loginStatus])
 
     useEffect(() => {
         if (loginStatus === AuthStatus.Approved) {
             dispatch(fetchSessionId({ accessTokenAuth, requestToken }))
         }
-    }, [loginStatus]);
+    }, [loginStatus])
 
     useEffect(() => {
         if (loginStatus === AuthStatus.LoggedIn) {
-            navigate('/')
+            dispatch(fetchAccountId({accessTokenAuth, sessionId}))
         }
-    }, [loginStatus]);
+    }, [loginStatus])
 
     useEffect(() => {
         if (loginStatus === AuthStatus.Rejected) {
@@ -46,13 +49,13 @@ const Login = () => {
             setUsername('')
             setPassword('')
         }
-    }, [loginStatus]);
+    }, [loginStatus])
 
     return (
-        <div>
+        <div className="login-container">
             <h2>Login</h2>
             <form>
-                <div>
+                <div className="form-group">
                     <label htmlFor="username">Username:</label>
                     <input
                         type="text"
@@ -61,7 +64,7 @@ const Login = () => {
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </div>
-                <div>
+                <div className="form-group">
                     <label htmlFor="password">Password:</label>
                     <input
                         type="password"
@@ -71,9 +74,9 @@ const Login = () => {
                     />
                 </div>
                 {isError && (
-                    <p style={{ color: 'red' }}>{errorMessage}</p>
+                    <p className="error-message">{errorMessage}</p>
                 )}
-                <button disabled={!canLogin} onClick={handleLoginClick}>Login</button>
+                <button className="login-button" disabled={!canLogin} onClick={handleLoginClick}>Login</button>
             </form>
         </div>
     );

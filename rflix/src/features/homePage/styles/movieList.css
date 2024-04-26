@@ -1,0 +1,22 @@
+.movies-container {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping of items */
+    justify-content: flex-start; /* Start from the beginning */
+    gap: 20px;
+    padding: 20px;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-y: hidden; /* Hide vertical overflow */
+    max-width: 100%; /* Allow container to expand */
+    height: auto; /* Allow container to adjust height based on content */
+}
+
+.movies-container .movie-card {
+    flex: 0 0 auto; /* Don't grow or shrink, maintain original size */
+    width: calc(25% - 20px); /* Four items in a row with gap of 20px */
+}
+
+@media (max-width: 768px) {
+    .movies-container {
+        justify-content: center;
+    }
+}
