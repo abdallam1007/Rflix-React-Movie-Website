@@ -5,6 +5,8 @@ import { fetchGenres, fetchMyRatings } from "./homePageSlice"
 import { selectAccessTokenAuth, selectAccountId } from "../auth/authSlice"
 import { useEffect } from "react"
 import TopRatedMovies from "./topRatedMovies"
+import Search from "./search"
+import HomePageNav from "./homePageNav"
 
 const HomePage = () => {
     const dispatch = useDispatch<AppDispatch>()
@@ -19,6 +21,8 @@ const HomePage = () => {
 
     return (
         <div>
+            <HomePageNav />
+            <Search />
             <PopularMovies />
             <TopRatedMovies />
         </div>

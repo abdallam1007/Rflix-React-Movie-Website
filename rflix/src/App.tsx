@@ -3,6 +3,8 @@ import Login from './features/auth/login';
 import HomePage from './features/homePage/homePage';
 import { useSelector } from 'react-redux';
 import { AuthStatus, selectStatus } from './features/auth/authSlice';
+import DetailedPage from './features/detailedPage/detailedPage';
+import MyRatings from './features/homePage/myRatings';
 
 function App() {
     const loginStatus = useSelector(selectStatus)
@@ -16,7 +18,11 @@ function App() {
                         )}
                 
                         {loginStatus === AuthStatus.FetchedAccountId && (
-                            <Route path="/" element={<HomePage />} />
+                            <>
+                                <Route path="/" element={<HomePage />} />
+                                <Route path="/myratings" element={<MyRatings />} />
+                                <Route path="/movie/:id" element={<DetailedPage />} /> 
+                            </>
                         )}
                 
                         <Route path="*" element={<Navigate to={loginStatus === AuthStatus.FetchedAccountId ? '/' : '/login'} />} />

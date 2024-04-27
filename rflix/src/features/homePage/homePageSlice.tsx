@@ -17,7 +17,8 @@ export interface HomePageState {
     genres: Dictionary<string>,
     myRatings: Dictionary<Movie>,
     popular: Dictionary<Movie>,
-    topRated: Dictionary<Movie>
+    topRated: Dictionary<Movie>,
+    search: Dictionary<Movie>
 }
 
 export interface Movie {
@@ -35,7 +36,7 @@ export interface Movies {
     results: Movie[]
 }
 
-interface Genre {
+export interface Genre {
     id: number;
     name: string;
   }
@@ -51,6 +52,7 @@ const GENRES_URL = 'https://api.themoviedb.org/3/genre/movie/list'
 const MY_RATINGS_URL = (accountId: number) => `https://api.themoviedb.org/3/account/${accountId}/rated/movies`
 const ADD_UPDATE_MOVIE_RATING = (movieId: number) => `https://api.themoviedb.org/3/movie/${movieId}/rating`
 const DELETE_MOVIE_RATING = (movieId: number) => `https://api.themoviedb.org/3/movie/${movieId}/rating`
+const SEARCH_MOVIES_URL = 'https://api.themoviedb.org/3/search/movie'
 
 
 function mapMoviesToDictionary(moviesResponse: Movie[]): Dictionary<Movie> {
@@ -73,7 +75,8 @@ export const initialState: HomePageState = {
     genres: {},
     myRatings: {},
     popular: {},
-    topRated: {}
+    topRated: {},
+    search: {}
 }
 
 export const fetchPopularMovies = createAsyncThunk('auth/fetchPopularMovies', async ({accessTokenAuth, pageNumber} : {accessTokenAuth: string; pageNumber: number}) => {
@@ -149,6 +152,19 @@ export const deleteRating = createAsyncThunk('auth/deleteRating', async ({access
     return response.data
 })
 
+export const fetchFilteredMovies = createAsyncThunk('auth/fetchFilteredMovies', async ({accessTokenAuth, title} : {accessTokenAuth: string; title: string}) => {
+    const response = await axios.get(SEARCH_MOVIES_URL, {
+        params: {
+            query: title
+        },
+        headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${accessTokenAuth}`
+        }
+    })
+    return response.data
+})
+
 const homePageSlice = createSlice({
     name: 'homePage',
     initialState,
@@ -200,6 +216,11 @@ const homePageSlice = createSlice({
             const moviesRated = mapMoviesToDictionary(action.payload.results)
             state.myRatings = moviesRated
         })
+
+        builder.addCase(fetchFilteredMovies.fulfilled, (state: HomePageState, action: PayloadAction<Movies>) => {
+            const moviesRated = mapMoviesToDictionary(action.payload.results)
+            state.search = moviesRated
+        })
     } 
 })
 
@@ -207,6 +228,7 @@ export const selectgenres = (state: RootState) => state.homePage.genres
 export const selectMyRatings = (state: RootState) => state.homePage.myRatings
 export const selectPopularMovies = (state: RootState) => state.homePage.popular
 export const selectTopRatedMovies = (state: RootState) => state.homePage.topRated
+export const selectFilteredMovies = (state: RootState) => state.homePage.search
 
 export const { setGenres, setMyRatings, setPopularMovies, setTopRatedMovies, addOrUpdateMovieRating, deleteMovieRating } = homePageSlice.actions;
 
