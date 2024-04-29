@@ -1,20 +1,19 @@
 import './styles/login.css'
 import { useDispatch, useSelector } from "react-redux";
-import { AuthStatus, selectStatus, fetchRequestToken, selectAccessTokenAuth, selectRequestToken, approveRequestToken, fetchSessionId, resetState, selectError, fetchAccountId, selectSessionId, selectAccountId } from "./authSlice"
+import { AuthStatus, selectStatus, fetchRequestToken, selectRequestToken, approveRequestToken, fetchSessionId, resetState, selectError, fetchAccountId, selectSessionId } from "./authSlice"
 import { AppDispatch } from "../../app/store";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import accessTokenAuth from '../../constants/config';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const dispatch = useDispatch<AppDispatch>()
     const navigate = useNavigate()
+    const dispatch = useDispatch<AppDispatch>()
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const accessTokenAuth = useSelector(selectAccessTokenAuth)
     const requestToken = useSelector(selectRequestToken)
     const sessionId = useSelector(selectSessionId)
-    const accountId = useSelector(selectAccountId)
     const loginStatus = useSelector(selectStatus)
     const errorMessage = useSelector(selectError)
 
@@ -48,6 +47,12 @@ const Login = () => {
             dispatch(resetState())
             setUsername('')
             setPassword('')
+        }
+    }, [loginStatus])
+
+    useEffect(() => {
+        if (loginStatus === AuthStatus.FetchedAccountId) {
+            navigate('/')
         }
     }, [loginStatus])
 

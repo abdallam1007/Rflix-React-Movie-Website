@@ -1,23 +1,33 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../app/store";
 import { fetchMovieDetails, fetchMovieRecommendations, fetchMovieReviews, selectMovieDetails, selectMovieRecommendations, selectMovieReviews } from "./detailedPageSlice";
-import { selectAccessTokenAuth } from "../auth/authSlice";
+import accessTokenAuth from '../../constants/config';
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Poster from "../homePage/poster";
 import Rating from "../homePage/rating";
 import MoviesList from "../homePage/moviesList";
 import './styles/detailedPage.css'
 import DetailedPageNav from "./detailedPageNav";
+import { AuthStatus, selectStatus } from "../auth/authSlice";
 
 const DetailedPage = () => {
     const { id } = useParams<{id: string}>()
+
+    const navigate = useNavigate()
     const dispatch = useDispatch<AppDispatch>()
     
-    const accessTokenAuth = useSelector(selectAccessTokenAuth)
     const movieDetails = useSelector(selectMovieDetails)
     const movieReviews = useSelector(selectMovieReviews)
     const movieRecommendations = useSelector(selectMovieRecommendations)
+
+
+    const status = useSelector(selectStatus)
+
+    useEffect(() => {
+        const isLoggedIn = status === AuthStatus.FetchedAccountId
+        if (!isLoggedIn) navigate('/login')
+    }, [status])
 
     useEffect(() => {
         dispatch(fetchMovieDetails({accessTokenAuth, movieId: Number(id)}))

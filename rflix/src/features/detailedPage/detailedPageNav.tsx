@@ -1,15 +1,17 @@
 import { useDispatch } from "react-redux";
 import { resetState } from "../auth/authSlice";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch } from "../../app/store";
 
 
 const DetailedPageNav = () => {
+    const navigate = useNavigate()
     const dispatch = useDispatch<AppDispatch>()
 
 
     const handleLogout = () => {
         dispatch(resetState())
+        navigate('/login')
     }
 
 

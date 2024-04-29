@@ -3,20 +3,30 @@ import { RootState } from '../../app/store'
 import axios from "axios";
 
 export enum AuthStatus {
-    Idle,
-    PendingRequestToken,
-    RequestTokenFetched,
-    PendingApproval,
-    Approved,
-    PendingSessionId,
-    LoggedIn,
-    PendingAccountId,
-    FetchedAccountId,
-    Rejected
+    Idle = 'Idle',
+    PendingRequestToken = 'PendingRequestToken',
+    RequestTokenFetched = 'RequestTokenFetched',
+    PendingApproval = 'PendingApproval',
+    Approved = 'Approved',
+    PendingSessionId = 'PendingSessionId',
+    LoggedIn = 'LoggedIn',
+    PendingAccountId = 'PendingAccountId',
+    FetchedAccountId = 'FetchedAccountId',
+    Rejected = 'Rejected'
 }
 
+// Convert enum value to string
+export const enumToString = (value: AuthStatus): string => {
+    return AuthStatus[value];
+  };
+  
+// Convert string to enum value
+export const stringToEnum = (value: string): AuthStatus | undefined => {
+    return Object.values(AuthStatus).find((enumValue) => enumValue === value) as AuthStatus;
+  };
+
+
 export interface AuthState {
-    accessTokenAuth: string,
     requestToken: string,
     sessionId: string,
     status: AuthStatus,
@@ -46,8 +56,6 @@ const REQUEST_TOKEN_APPROVAL_URL = 'https://api.themoviedb.org/3/authentication/
 const SESSION_ID_URL = 'https://api.themoviedb.org/3/authentication/session/new'
 
 const initialState = {
-    // Todo: Need to move this value to an outside and treat it like a secret
-    accessTokenAuth: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMzYwYTkxNGFjMDAzNWMwOWZlNjYwYjdmOWI3MTk5NyIsInN1YiI6IjY2MjYzZjQyYjI2ODFmMDFhOTc0Y2E5OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.RIB0yJl1jNkIsUtaWpXGFMMLYnV6pkRBVwCGRGStrHk',
     requestToken: '',
     sessionId: '',
     status: AuthStatus.Idle,
@@ -120,10 +128,16 @@ const authSlice = createSlice({
             state.status = AuthStatus.Idle
             state.requestToken = ''
             state.sessionId = ''
+            localStorage.setItem('STATUS', enumToString(state.status));
+            localStorage.setItem('SESSION_ID', state.sessionId);
         },
         
         setRequestToken(state: AuthState, action: PayloadAction<string>) {
             state.requestToken = action.payload
+        },
+
+        setSessionId(state: AuthState, action: PayloadAction<string>) {
+            state.sessionId = action.payload
         },
 
         updateStatus(state: AuthState, action: PayloadAction<AuthStatus>) {
@@ -133,6 +147,7 @@ const authSlice = createSlice({
     extraReducers: (builder) => {
         builder.addCase(fetchRequestToken.pending, (authState: AuthState, action: PayloadAction) => {
             authState.status = AuthStatus.PendingRequestToken
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
         builder.addCase(fetchRequestToken.fulfilled, (authState: AuthState, action: PayloadAction<RequestTokenResponse>) => {
@@ -140,34 +155,40 @@ const authSlice = createSlice({
             {
                 authState.requestToken = action.payload.request_token
                 authState.status = AuthStatus.RequestTokenFetched
+                localStorage.setItem('STATUS', enumToString(authState.status));
             }
         })
 
         builder.addCase(fetchRequestToken.rejected, (authState: AuthState, action) => {
             authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the request token"
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
 
         builder.addCase(approveRequestToken.pending, (authState: AuthState, action: PayloadAction) => {
             authState.status = AuthStatus.PendingApproval
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
         builder.addCase(approveRequestToken.fulfilled, (authState: AuthState, action: PayloadAction<SessionIdResponse>) => {
             if (action.payload.success)
             {
                 authState.status = AuthStatus.Approved
+                localStorage.setItem('STATUS', enumToString(authState.status));
             }
         })
 
         builder.addCase(approveRequestToken.rejected, (authState: AuthState, action) => {
             authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred approving the request token"
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
 
         builder.addCase(fetchSessionId.pending, (authState: AuthState, action: PayloadAction) => {
             authState.status = AuthStatus.PendingSessionId
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
         builder.addCase(fetchSessionId.fulfilled, (authState: AuthState, action: PayloadAction<SessionIdResponse>) => {
@@ -176,39 +197,43 @@ const authSlice = createSlice({
                 authState.status = AuthStatus.LoggedIn
                 authState.error = ''
                 authState.sessionId = action.payload.session_id
+                localStorage.setItem('SESSION_ID', authState.sessionId);
+                localStorage.setItem('STATUS', enumToString(authState.status));
             }
         })
 
         builder.addCase(fetchSessionId.rejected, (authState: AuthState, action) => {
             authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the session ID"
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
 
         builder.addCase(fetchAccountId.pending, (authState: AuthState, action: PayloadAction) => {
             authState.status = AuthStatus.PendingAccountId
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
         builder.addCase(fetchAccountId.fulfilled, (authState: AuthState, action: PayloadAction<AccountResponse>) => {
-            authState.status = AuthStatus.FetchedAccountId
             authState.accountId = action.payload.id
+            authState.status = AuthStatus.FetchedAccountId
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
 
         builder.addCase(fetchAccountId.rejected, (authState: AuthState, action) => {
             authState.status = AuthStatus.Rejected
             authState.error = action.error?.message || "An error occurred fetching the session ID"
+            localStorage.setItem('STATUS', enumToString(authState.status));
         })
     }
 })
 
-
-export const selectAccessTokenAuth = (state: RootState) => state.auth.accessTokenAuth
 export const selectRequestToken = (state: RootState) => state.auth.requestToken
 export const selectSessionId = (state: RootState) => state.auth.sessionId
 export const selectStatus = (state: RootState) => state.auth.status
 export const selectAccountId = (state: RootState) => state.auth.accountId
 export const selectError = (state: RootState) => state.auth.error
 
-export const { resetState , setRequestToken , updateStatus } = authSlice.actions;
+export const { resetState , setRequestToken , updateStatus, setSessionId } = authSlice.actions;
 
 export default authSlice.reducer
