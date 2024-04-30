@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { Movie, addOrUpdateMovieRating, addOrUpdateRating, deleteMovieRating, deleteRating, selectMyRatings } from "./homePageSlice";
+import { Movie, addOrUpdateMovieRating, addOrUpdateRating, selectMyRatings } from "./homePageSlice";
 import { useEffect, useState } from "react";
 import accessTokenAuth from '../../constants/config';
 import { AppDispatch } from "../../app/store";

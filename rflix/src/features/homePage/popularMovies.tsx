@@ -1,25 +1,33 @@
 import { useDispatch, useSelector } from "react-redux"
 import { AppDispatch } from "../../app/store"
-import { Dictionary, Movie, fetchPopularMovies, selectPopularMovies, selectgenres } from "./homePageSlice"
+import { Dictionary, Movie, Movies, fetchMovies, mapMoviesToDictionary, selectgenres } from "./homePageSlice"
 import accessTokenAuth from '../../constants/config';
 import { useEffect, useState } from "react"
 import MoviesList from "./moviesList"
 import './styles/popularMovies.css'
 
-
 const PopularMovies = () => {
     const dispatch = useDispatch<AppDispatch>()
 
-    const popularMovies = useSelector(selectPopularMovies)
     const genres = useSelector(selectgenres)
 
+    const [popularMovies, setpopularMovies] = useState<Dictionary<Movie>>({})
     const [currentPage, setCurrentPage] = useState(1);
     const [currentGenre, setCurrentGenre] = useState(0)
     const [selectedMovies, setSelectedMovies] = useState(popularMovies);
 
+    const POPULAR_MOVIES_URL = 'https://api.themoviedb.org/3/movie/popular'
+
     useEffect(() => {
-        dispatch(fetchPopularMovies({accessTokenAuth, pageNumber: currentPage}));
-    }, [currentPage]);
+        dispatch(fetchMovies({accessTokenAuth, pageNumber: currentPage, moviesURL: POPULAR_MOVIES_URL}))
+        .then((response) => {
+            if (response.meta.requestStatus === 'fulfilled') {
+                const payload = response.payload as Movies
+                const resultsMapped = mapMoviesToDictionary(payload.results)
+                setpopularMovies(resultsMapped)
+            }
+        })
+    }, [currentPage])
 
     useEffect(() => {
         if (currentGenre === 0) {

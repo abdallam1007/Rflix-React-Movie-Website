@@ -1,6 +1,6 @@
-import { useDispatch, useSelector } from "react-redux"
+import { useDispatch } from "react-redux"
 import { AppDispatch } from "../../app/store"
-import { fetchFilteredMovies, selectFilteredMovies } from "./homePageSlice"
+import { Dictionary, Movie, Movies, fetchFilteredMovies, mapMoviesToDictionary } from "./homePageSlice"
 import { useState } from "react";
 import accessTokenAuth from '../../constants/config';
 import './styles/search.css'
@@ -10,16 +10,19 @@ const Search = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [query, setQuery] = useState('');
   
-    const searchedMovies = useSelector(selectFilteredMovies);
+    const [searchedMovies, setsearchedMovies] = useState<Dictionary<Movie>>({})
   
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = event.target;
         setQuery(value);
-        dispatch(fetchFilteredMovies({accessTokenAuth, title: value}));
-    };
-  
-    const handleSearch = () => {
-        dispatch(fetchFilteredMovies({accessTokenAuth, title: query}));
+        dispatch(fetchFilteredMovies({accessTokenAuth, title: value}))
+        .then((response) => {
+            if (response.meta.requestStatus === 'fulfilled') {
+                const payload = response.payload as Movies
+                const resultsMapped = mapMoviesToDictionary(payload.results)
+                setsearchedMovies(resultsMapped)
+            }
+        })
     };
   
     return (
@@ -32,7 +35,6 @@ const Search = () => {
                     onChange={handleChange}
                     placeholder="Search by movie title..."
                 />
-                <button className="search-button" onClick={handleSearch}>Search</button>
             </div>
             {query.length > 0 && <h2 className="searched-movies-heading">Search Results</h2>}
             <MoviesList movies={searchedMovies} />

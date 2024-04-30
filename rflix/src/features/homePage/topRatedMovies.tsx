@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dictionary, Movie, fetchTopRatedMovies, selectTopRatedMovies, selectgenres } from "./homePageSlice";
+import { Dictionary, Movie, Movies, fetchMovies, mapMoviesToDictionary, selectgenres } from "./homePageSlice";
 import accessTokenAuth from '../../constants/config';
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../app/store";
@@ -9,16 +9,25 @@ import './styles/topRatedMovies.css'
 const TopRatedMovies = () => {
     const dispatch = useDispatch<AppDispatch>()
 
-    const topRatedMovies = useSelector(selectTopRatedMovies)
     const genres = useSelector(selectgenres)
 
+    const [topRatedMovies, settopRatedMovies] = useState<Dictionary<Movie>>({})
     const [currentPage, setCurrentPage] = useState(1);
     const [currentGenre, setCurrentGenre] = useState(0)
     const [selectedMovies, setSelectedMovies] = useState(topRatedMovies);
 
+    const TOP_RATED_MOVIES_URL = 'https://api.themoviedb.org/3/movie/top_rated'
+
     useEffect(() => {
-        dispatch(fetchTopRatedMovies({accessTokenAuth, pageNumber: currentPage}));
-    }, [currentPage]);
+        dispatch(fetchMovies({accessTokenAuth, pageNumber: currentPage, moviesURL: TOP_RATED_MOVIES_URL}))
+        .then((response) => {
+            if (response.meta.requestStatus === 'fulfilled') {
+                const payload = response.payload as Movies
+                const resultsMapped = mapMoviesToDictionary(payload.results)
+                settopRatedMovies(resultsMapped)
+            }
+        })
+    }, [currentPage])
 
     useEffect(() => {
         if (currentGenre === 0) {
